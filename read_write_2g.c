@@ -19,8 +19,6 @@ int main(int argc,char *argv[]){
         exit(1);
     }
     char cache[4096];
-    for(int i = 0; i < 4096; i++)
-        cache[i] = i%3+65;
     for(int i = 0; i < 524288; i++){
         fread(cache, sizeof(char), 4096, read_2g);
         fwrite(cache, sizeof(char), 4096, write_2g);
