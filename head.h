@@ -16,4 +16,5 @@ typedef struct Entry {
 char base_file[100] = "/home/fjywade/r5ssd/basefile";
 char delta_file[100] = "/home/fjywade/r5ssd/deltafile";
 //char ssd_file[100] = "/home/fjywade/del/ssd";
-char ssd_file[100] = "/dev/nvme0n1";
+//char ssd_file[100] = "/dev/nvme0n1";
+char ssd_file[100] = "/dev/nvme1n1";

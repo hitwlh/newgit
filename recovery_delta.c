@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include "head.h"
-
+#define DEBUG 1
 int main(int argc,char *argv[])
 {   
     clock_t start, finish;
@@ -38,6 +38,11 @@ int main(int argc,char *argv[])
     fread((void *) (&delta_clusters), sizeof(uint32_t), 1, in_ssd);
     Entry *entries = (Entry*)malloc(delta_clusters*sizeof(Entry));
     fread(entries, sizeof(Entry), delta_clusters, in_ssd);
+    
+    #ifdef DEBUG
+    long read_counts = 0, write_counts = 0;
+    read_counts += sizeof(Entry) * delta_clusters;
+    #endif
     for(int i = 0; i < delta_clusters; i++){
         cluster_offset = entries[i].cluster_offset;
         cluster_offset *= cluster_size;
@@ -48,20 +53,31 @@ int main(int argc,char *argv[])
             if(entries[i].bitmap_dirty & (one << j)){
                 fseek(in_ssd, cache_offset, SEEK_SET);
                 fread(cache_read_Buf, sizeof(char), cache_size, in_ssd);
+                #ifdef DEBUG
+                read_counts += cache_size * sizeof(char);
+                #endif
                 memcpy(clusterBuf + j * cache_size, cache_read_Buf, cache_size);
             }else{
                 fseek(in_base, cluster_offset + j * cache_size, SEEK_SET);
                 fread(cache_read_Buf, sizeof(char), cache_size, in_base);
+                #ifdef DEBUG
+                read_counts += cache_size * sizeof(char);
+                #endif
                 memcpy(clusterBuf + j * cache_size, cache_read_Buf, cache_size);
             }
         }
-        //}
         fwrite(clusterBuf, sizeof(char), cluster_size, out_delta);
+        #ifdef DEBUG
+            write_counts += cluster_size * sizeof(char);
+        #endif
     }
     free(entries);
     fclose(in_ssd);
     fclose(out_delta);
     fclose(in_base);
+    #ifdef DEBUG
+    printf("read %.1fMB, write %.1fMB\n", (float)read_counts/1000000, (float)write_counts/1000000);
+    #endif
     finish = clock();
     duration = (double)(finish - start) / CLOCKS_PER_SEC;
     printf( "%f seconds to recovery deltafile\n", duration);
