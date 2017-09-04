@@ -7,6 +7,8 @@
 #include <time.h>
 #include "head.h"
 //#define DEBUG 1
+char MB_Buf[1048600];
+int MB_index = 0;
 int main(int argc,char *argv[])
 {   
     clock_t start, finish;
@@ -43,34 +45,45 @@ int main(int argc,char *argv[])
     long read_counts = 0, write_counts = 0;
     read_counts += sizeof(Entry) * delta_clusters;
     #endif
-    for(int i = 0; i < delta_clusters; i++){
-        cluster_offset = entries[i].cluster_offset;
-        cluster_offset *= cluster_size;
-        for(int j = 0; j < 16; j++){
+    int i = 0;
+    for(; i < delta_clusters; i++){ 
+        if(entries[i].visited == 16){
+            for(int j = 0; j < 16; j++){
             cache_offset = entries[i].cache_offset[j];
             cache_offset *= cache_size;
             cache_offset += offset;
-            if(entries[i].bitmap_dirty & (one << j)){
-                fseek(in_ssd, cache_offset, SEEK_SET);
-                fread(cache_read_Buf, sizeof(char), cache_size, in_ssd);
-                #ifdef DEBUG
-                read_counts += cache_size * sizeof(char);
-                #endif
-                memcpy(clusterBuf + j * cache_size, cache_read_Buf, cache_size);
-            }else{
-                fseek(in_base, cluster_offset + j * cache_size, SEEK_SET);
-                fread(cache_read_Buf, sizeof(char), cache_size, in_base);
-                #ifdef DEBUG
-                read_counts += cache_size * sizeof(char);
-                #endif
-                memcpy(clusterBuf + j * cache_size, cache_read_Buf, cache_size);
+            fseek(in_ssd, cache_offset, SEEK_SET);
+            fread(clusterBuf + j * cache_size, sizeof(char), cache_size, in_ssd);
+            }
+        }else{
+            cluster_offset = entries[i].cluster_offset;
+            cluster_offset *= cluster_size;
+            fseek(in_base, cluster_offset, SEEK_SET);
+            fread(clusterBuf, sizeof(char), cluster_size, in_base);
+            for(int j = 0; j < 16; j++){
+                if(entries[i].bitmap_dirty & (one << j)){
+                    cache_offset = entries[i].cache_offset[j];
+                    cache_offset *= cache_size;
+                    cache_offset += offset;
+                    fseek(in_ssd, cache_offset, SEEK_SET);
+                    fread(clusterBuf + j * cache_size, sizeof(char), cache_size, in_ssd);
+                }
             }
         }
-        fwrite(clusterBuf, sizeof(char), cluster_size, out_delta);
-        #ifdef DEBUG
-            write_counts += cluster_size * sizeof(char);
-        #endif
+        memcpy(MB_Buf + MB_index, clusterBuf, cluster_size);
+        MB_index += cluster_size;
+        if(MB_index + cluster_size > 1048600){
+            fwrite(MB_Buf, sizeof(char), MB_index, out_delta);
+            MB_index = 0;
+            #ifdef DEBUG
+                write_counts += MB_index * sizeof(char);
+            #endif
+        }
     }
+    fwrite(MB_Buf, sizeof(char), MB_index, out_delta);
+    #ifdef DEBUG
+        write_counts += MB_index * sizeof(char);
+    #endif
     fflush(out_delta);
     fflush(in_ssd);
     fflush(in_base);
