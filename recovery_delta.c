@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include "head.h"
-#define DEBUG 1
+//#define DEBUG 1
 int main(int argc,char *argv[])
 {   
     clock_t start, finish;
@@ -71,6 +71,9 @@ int main(int argc,char *argv[])
             write_counts += cluster_size * sizeof(char);
         #endif
     }
+    fflush(out_delta);
+    fflush(in_ssd);
+    fflush(in_base);
     free(entries);
     fclose(in_ssd);
     fclose(out_delta);

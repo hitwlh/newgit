@@ -126,7 +126,9 @@ int main(int argc,char *argv[])
     printf("total write = %u (%.1fMB, %.1fGB), 4k based\n", total_write_4k, (float)total_write_4k*4096/1000000, (float)total_write_4k*4096/1000000000);
     printf("unique write = %u (%.1fMB, %.1fGB), 4k based\n", unique_write_4k, (float)unique_write_4k*4096/1000000, (float)unique_write_4k*4096/1000000000);
     printf("unique write = %u (%.1fMB, %.1fGB), 64k based\n", unique_write_64k, (float)unique_write_64k*65536/1000000, (float)unique_write_64k*65536/1000000000);
-    printf("cow = %.4f\n", (float)unique_write_64k / total_write_4k);
+    //printf("cow = %.4f\n", (float)unique_write_64k / total_write_4k);
     printf("fully writed clusters = %u\n", full_64k);
+    printf("fully writed clusters / unique write clusters = %.3f",(float)full_64k / unique_write_64k);
+    printf("read : write = %d : %d", (float)total_read_4k / (total_read_4k + total_write_4k), 1 - (float)total_read_4k / (total_read_4k + total_write_4k));
     return 0;
 }
